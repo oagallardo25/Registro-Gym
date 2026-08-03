@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Registro Gym</title>
+<style>
+  :root{
+    --bg: #121110;
+    --bg-panel: #1c1a18;
+    --bg-panel-2: #242220;
+    --line: #38342f;
+    --amber: #f5a623;
+    --amber-dim: #7a5a1e;
+    --text: #f2ede4;
+    --text-dim: #9b9489;
+    --danger: #d9534f;
+    --ok: #6fbf73;
+    --radius: 14px;
+    font-size: 16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height:100vh;
+    padding-bottom:90px;
+  }
+  header.top{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg, #17140f 0%, #17140fdd 90%, transparent);
+    backdrop-filter: blur(6px);
+    padding:18px 18px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .brand .mark{
+    font-family: 'Arial Black', sans-serif;
+    font-weight:900;
+    font-size:1.6rem;
+    letter-spacing:-0.5px;
+    color:var(--amber);
+  }
+  .brand .sub{
+    font-size:0.75rem;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  nav.tabs{
+    display:flex;
+    gap:6px;
+    margin-top:14px;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  nav.tabs button{
+    flex:none;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text-dim);
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:0.82rem;
+    font-weight:600;
+    letter-spacing:0.3px;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:#181510;
+  }
+  main{padding:16px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    margin:0 0 12px;
+    font-size:1rem;
+    letter-spacing:0.5px;
+    color:var(--amber);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .row-label{
+    font-size:0.75rem;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin-bottom:6px;
+    display:block;
+  }
+  input[type=date], select, input[type=number]{
+    width:100%;
+    background:var(--bg-panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:11px 10px;
+    border-radius:10px;
+    font-size:0.95rem;
+  }
+  select:focus, input:focus{ outline:2px solid var(--amber); outline-offset:1px; }
+
+  .block-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+  }
+  .block-chip{
+    border:1px solid var(--line);
+    background:var(--bg-panel-2);
+    border-radius:10px;
+    padding:12px 10px;
+    text-align:center;
+    font-size:0.85rem;
+    font-weight:600;
+  }
+  .block-chip.selected{
+    border-color:var(--amber);
+    background:#2c2313;
+    color:var(--amber);
+  }
+
+  .machine{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    background:var(--bg-panel-2);
+  }
+  .machine .m-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .machine .m-name{ font-weight:600; font-size:0.92rem; }
+  .machine .m-tag{
+    font-size:0.65rem;
+    color:var(--bg);
+    background:var(--text-dim);
+    padding:2px 7px;
+    border-radius:6px;
+    letter-spacing:0.5px;
+    font-weight:700;
+  }
+  .machine .m-fields{
+    display:grid;
+    grid-template-columns:1fr 70px;
+    gap:8px;
+  }
+  .toggle-row{
+    display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  }
+  .toggle-row input{ width:18px; height:18px; accent-color:var(--amber); }
+
+  button.primary{
+    width:100%;
+    background:var(--amber);
+    color:#181510;
+    border:none;
+    padding:14px;
+    border-radius:12px;
+    font-weight:800;
+    font-size:0.95rem;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+  }
+  button.secondary{
+    width:100%;
+    background:transparent;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+    padding:12px;
+    border-radius:12px;
+    font-weight:600;
+    font-size:0.85rem;
+    margin-top:8px;
+  }
+  .empty{
+    color:var(--text-dim);
+    font-size:0.85rem;
+    text-align:center;
+    padding:30px 10px;
+  }
+  .session-item{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:10px;
+    background:var(--bg-panel-2);
+  }
+  .session-item .s-date{
+    font-weight:700; color:var(--amber); font-size:0.9rem;
+  }
+  .session-item .s-blocks{
+    font-size:0.72rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:2px 0 8px;
+  }
+  .session-item .s-line{
+    display:flex; justify-content:space-between;
+    font-size:0.85rem;
+    padding:3px 0;
+    border-top:1px dashed var(--line);
+  }
+  .session-item .s-line:first-of-type{ border-top:none; }
+  .del-btn{
+    background:transparent; border:1px solid var(--danger); color:var(--danger);
+    font-size:0.7rem; padding:4px 10px; border-radius:8px; float:right;
+  }
+  select.machine-select{
+    margin-bottom:12px;
+  }
+  .chart-wrap{
+    background:var(--bg-panel-2);
+    border-radius:10px;
+    padding:10px;
+    overflow-x:auto;
+  }
+  svg text{ font-family: inherit; }
+  .pending-note{
+    font-size:0.72rem;
+    color:var(--amber-dim);
+    margin-top:6px;
+  }
+  .stat-row{
+    display:flex; gap:8px; margin-top:10px;
+  }
+  .stat{
+    flex:1;
+    background:var(--bg-panel-2);
+    border-radius:10px;
+    padding:10px;
+    text-align:center;
+  }
+  .stat .n{ font-size:1.3rem; font-weight:800; color:var(--amber); }
+  .stat .l{ font-size:0.65rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+  footer.note{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:0.7rem;
+    padding:20px 30px;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="mark">MI GYM</span>
+    <span class="sub">registro diario</span>
+  </div>
+  <nav class="tabs">
+    <button data-view="nueva" class="active">+ Sesión</button>
+    <button data-view="historial">Historial</button>
+    <button data-view="progreso">Progreso</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===== NUEVA SESION ===== -->
+  <section id="view-nueva" class="view active">
+    <div class="card">
+      <h2>Fecha</h2>
+      <input type="date" id="inputFecha">
+    </div>
+
+    <div class="card">
+      <h2>Bloques de hoy</h2>
+      <div class="block-grid" id="blockGrid"></div>
+    </div>
+
+    <div id="machinesContainer"></div>
+
+    <button class="primary" id="btnGuardar">Guardar sesión</button>
+  </section>
+
+  <!-- ===== HISTORIAL ===== -->
+  <section id="view-historial" class="view">
+    <div class="card">
+      <h2>Sesiones registradas</h2>
+      <div id="historialList"><div class="empty">Aún no hay sesiones guardadas.</div></div>
+    </div>
+  </section>
+
+  <!-- ===== PROGRESO ===== -->
+  <section id="view-progreso" class="view">
+    <div class="card">
+      <h2>Progreso por máquina</h2>
+      <select class="machine-select" id="progresoMachineSelect"></select>
+      <div id="progresoStats" class="stat-row"></div>
+      <div class="chart-wrap" id="chartWrap"><div class="empty">Selecciona una máquina con historial.</div></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="note">Datos guardados solo en este dispositivo/navegador · Año 2026</footer>
+
+<script>
+/* =========================================================
+   DATOS DE MÁQUINAS
+   ========================================================= */
+
+function range(start, end, step){
+  const out = [];
+  for(let v = start; v <= end + 1e-9; v += step){
+    out.push(Math.round(v*100)/100);
+  }
+  return out;
+}
+
+const L1_WEIGHTS = range(10, 36, 2);      // mancuernas
+const L2_WEIGHTS = range(2.5, 40, 2.5);   // discos
+
+// Tabla fija: máquinas de piernas con stack lbs/kg
+const STACK_PIERNAS = [
+  {lbs:10, kg:4.5},{lbs:20, kg:9},{lbs:30, kg:14},{lbs:40, kg:18},
+  {lbs:50, kg:23},{lbs:60, kg:27},{lbs:70, kg:32},{lbs:80, kg:36},
+  {lbs:90, kg:41},{lbs:100, kg:45},{lbs:110, kg:50},{lbs:120, kg:54},
+  {lbs:130, kg:59},{lbs:140, kg:63},{lbs:150, kg:68},{lbs:160, kg:72},
+  {lbs:170, kg:77},{lbs:180, kg:81},{lbs:190, kg:86},{lbs:200, kg:90}
+];
+
+// Leg Press (Matrix) - stack propio
+const STACK_LEG_PRESS = [
+  {lbs:20, kg:9},{lbs:40, kg:18},{lbs:60, kg:27},{lbs:80, kg:36},
+  {lbs:100, kg:45},{lbs:120, kg:54},{lbs:140, kg:63},{lbs:160, kg:72},
+  {lbs:180, kg:81},{lbs:200, kg:90},{lbs:220, kg:99},{lbs:240, kg:108},
+  {lbs:260, kg:117},{lbs:280, kg:126},{lbs:300, kg:135},{lbs:320, kg:144},
+  {lbs:340, kg:153},{lbs:360, kg:162},{lbs:380, kg:171},{lbs:400, kg:180}
+];
+
+// Polea 1: 2.5-72.5 lbs (tabla completa)
+const POLEA_1 = [
+  {lbs:2.5, kg:1.1},{lbs:7.5, kg:3.4},{lbs:12.5, kg:5.7},{lbs:17.5, kg:7.9},
+  {lbs:22.5, kg:10.2},{lbs:27.5, kg:12.5},{lbs:32.5, kg:14.7},
+  {lbs:37.5, kg:17.0},
+  {lbs:42.5, kg:19.3},{lbs:47.5, kg:21.6},{lbs:52.5, kg:23.8},{lbs:57.5, kg:26.1},
+  {lbs:62.5, kg:28.4},{lbs:67.5, kg:30.6},{lbs:72.5, kg:32.9}
+];
+
+// Accesorios disponibles para máquinas de polea
+const POLEA_ACCESORIOS = ["Barra corta", "Soga", "Barra en Y", "Barra recta larga", "Agarre individual (asa)"];
+
+// Polea 2: 5-100 lbs
+const POLEA_2 = [
+  {lbs:5, kg:2.3},{lbs:10, kg:4.5},{lbs:15, kg:6.8},{lbs:20, kg:9},
+  {lbs:25, kg:11.3},{lbs:30, kg:13.5},{lbs:35, kg:15.8},{lbs:40, kg:18},
+  {lbs:45, kg:20.3},{lbs:50, kg:22.5},{lbs:55, kg:24.8},{lbs:60, kg:27},
+  {lbs:65, kg:29.3},{lbs:70, kg:31.5},{lbs:75, kg:33.8},{lbs:80, kg:36},
+  {lbs:85, kg:38.3},{lbs:90, kg:40.5},{lbs:95, kg:42.8},{lbs:100, kg:45}
+];
+
+// Barra plana / zigzag: mismo rango en kg
+const BARRA_KG = [10,12.5,15,17.5,20,25,30,35,40];
+
+// Abdominal (Abdomen y Lombar) - stack propio
+const STACK_ABDOMINAL = [
+  {lbs:10, kg:4.5},{lbs:20, kg:9},{lbs:30, kg:14},{lbs:40, kg:18},
+  {lbs:50, kg:23},{lbs:60, kg:27},{lbs:70, kg:32},{lbs:80, kg:36},
+  {lbs:90, kg:41},{lbs:100, kg:45},{lbs:110, kg:50},{lbs:120, kg:54},
+  {lbs:130, kg:59},{lbs:140, kg:63},{lbs:150, kg:68},{lbs:160, kg:72},
+  {lbs:170, kg:77},{lbs:180, kg:81},{lbs:190, kg:86},{lbs:200, kg:90},
+  {lbs:210, kg:95},{lbs:220, kg:99},{lbs:230, kg:104},{lbs:240, kg:108}
+];
+
+// Triceps Press (Matrix) - stack propio
+// Biceps Curl (Matrix) - stack propio
+// Lat Pulldown Convergente (Matrix) - stack propio
+const STACK_LAT_PULLDOWN = [
+  {lbs:20, kg:9},{lbs:30, kg:14},{lbs:40, kg:18},{lbs:50, kg:23},
+  {lbs:60, kg:27},{lbs:70, kg:32},{lbs:80, kg:36},{lbs:90, kg:41},
+  {lbs:100, kg:45},{lbs:110, kg:50},{lbs:120, kg:54},{lbs:130, kg:59},
+  {lbs:140, kg:63},{lbs:150, kg:68},{lbs:160, kg:72},{lbs:170, kg:77},
+  {lbs:180, kg:81},{lbs:190, kg:86},{lbs:200, kg:90},{lbs:210, kg:95},
+  {lbs:220, kg:99},{lbs:230, kg:104},{lbs:240, kg:108}
+];
+
+const STACK_BICEPS_CURL = [
+  {lbs:10, kg:4.5},{lbs:20, kg:9},{lbs:30, kg:14},{lbs:40, kg:18},
+  {lbs:50, kg:23},{lbs:60, kg:27},{lbs:70, kg:32},{lbs:80, kg:36},
+  {lbs:90, kg:41},{lbs:100, kg:45},{lbs:110, kg:50},{lbs:120, kg:54},
+  {lbs:130, kg:59},{lbs:140, kg:63},{lbs:150, kg:68},{lbs:160, kg:72},
+  {lbs:170, kg:77},{lbs:180, kg:81},{lbs:190, kg:86},{lbs:200, kg:90}
+];
+
+const STACK_TRICEPS_PRESS = [
+  {lbs:10, kg:4.5},{lbs:20, kg:9},{lbs:30, kg:14},{lbs:40, kg:18},
+  {lbs:50, kg:23},{lbs:60, kg:27},{lbs:70, kg:32},{lbs:80, kg:36},
+  {lbs:90, kg:41},{lbs:100, kg:45},{lbs:110, kg:50},{lbs:120, kg:54},
+  {lbs:130, kg:59},{lbs:140, kg:63},{lbs:150, kg:68},{lbs:160, kg:72},
+  {lbs:175, kg:79},{lbs:190, kg:86},{lbs:205, kg:93},{lbs:220, kg:99},
+  {lbs:235, kg:107},{lbs:250, kg:113},{lbs:265, kg:120}
+];
+
+function mkMachine(id, name, type, extra){
+  return Object.assign({id, name, type}, extra||{});
+}
+
+const BLOCKS = {
+  "Pecho": [
+    mkMachine("pecho_inclinado_banco", "Inclinado con banco", "L1"),
+    mkMachine("pecho_plano_banco", "Plano con banco", "L1"),
+    mkMachine("pecho_plano_barra", "Plano con barra", "L2"),
+    mkMachine("pecho_inclinado_barra", "Inclinado con barra", "L2"),
+    mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
+    mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
+  ],
+  "Piernas": [
+    mkMachine("piernas_haka", "Haka", "L2"),
+    mkMachine("piernas_smith", "Smith", "L2"),
+    mkMachine("piernas_sent_normal", "Sentadilla Normal", "L1"),
+    mkMachine("piernas_sent_zumo", "Sentadilla Zumo", "L1"),
+    mkMachine("piernas_prensa", "Prensa", "L2"),
+    mkMachine("piernas_bulgara", "Búlgara", "L1"),
+    mkMachine("piernas_hipthrust", "Hip Thrust", "L2"),
+    mkMachine("piernas_abductores", "Máquina de abductores", "fixed_lbs", {table: STACK_PIERNAS}),
+    mkMachine("piernas_aductores", "Máquina de aductores", "fixed_lbs", {table: STACK_PIERNAS}),
+    mkMachine("piernas_extension", "Extensión", "fixed_lbs", {table: STACK_PIERNAS}),
+    mkMachine("piernas_femoral_sentado", "Femoral Sentado", "fixed_lbs", {table: STACK_PIERNAS}),
+    mkMachine("piernas_femoral_acostado", "Femoral Acostado", "fixed_lbs", {table: STACK_PIERNAS}),
+    mkMachine("piernas_leg_press", "Leg Press", "fixed_lbs", {table: STACK_LEG_PRESS}),
+  ],
+  "Hombros": [
+    mkMachine("hombros_press_militar", "Press Militar", "L2"),
+    mkMachine("hombros_mancuernas_libres", "Ejercicio con mancuernas libres", "L1"),
+    mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
+    mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
+    mkMachine("barra_plana", "Barra plana", "fixed_kg", {table: BARRA_KG}),
+    mkMachine("barra_zigzag", "Barra zigzag", "fixed_kg", {table: BARRA_KG}),
+  ],
+  "Bíceps": [
+    mkMachine("biceps_maquina", "Biceps Curl", "fixed_lbs", {table: STACK_BICEPS_CURL}),
+    mkMachine("biceps_mancuernas_libres", "Ejercicio con mancuernas libres", "L1"),
+    mkMachine("dominadas_supino", "Dominadas agarre supino", "bodyweight"),
+    mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
+    mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
+    mkMachine("barra_plana", "Barra plana", "fixed_kg", {table: BARRA_KG}),
+    mkMachine("barra_zigzag", "Barra zigzag", "fixed_kg", {table: BARRA_KG}),
+  ],
+  "Tríceps": [
+    mkMachine("triceps_maquina", "Triceps Press", "fixed_lbs", {table: STACK_TRICEPS_PRESS}),
+    mkMachine("triceps_mancuernas_libres", "Ejercicio con mancuernas libres", "L1"),
+    mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
+    mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
+    mkMachine("barra_plana", "Barra plana", "fixed_kg", {table: BARRA_KG}),
+    mkMachine("barra_zigzag", "Barra zigzag", "fixed_kg", {table: BARRA_KG}),
+  ],
+};
+
+// Abdomen: nuevo bloque
+BLOCKS["Abdomen"] = [
+  mkMachine("abdomen_abdominal", "Abdominal (Abdomen y Lumbar)", "fixed_lbs", {table: STACK_ABDOMINAL}),
+];
+
+// Espalda: bloque pendiente, ya incluye barra plana/zigzag + agarre prono
+BLOCKS["Espalda"] = [
+  mkMachine("espalda_lat_pulldown", "Lat Pulldown Convergente", "fixed_lbs", {table: STACK_LAT_PULLDOWN}),
+  mkMachine("dominadas_prono", "Dominadas agarre prono", "bodyweight"),
+  mkMachine("barra_plana", "Barra plana", "fixed_kg", {table: BARRA_KG}),
+  mkMachine("barra_zigzag", "Barra zigzag", "fixed_kg", {table: BARRA_KG}),
+];
+
+/* =========================================================
+   STORAGE
+   ========================================================= */
+const STORAGE_KEY = "gym_sessions_2026";
+
+function loadSessions(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveSessions(sessions){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+}
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+let selectedBlocks = new Set();
+let sessions = loadSessions();
+
+/* =========================================================
+   NAV
+   ========================================================= */
+document.querySelectorAll("nav.tabs button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view-"+btn.dataset.view).classList.add("active");
+    if(btn.dataset.view === "historial") renderHistorial();
+    if(btn.dataset.view === "progreso") renderProgresoSelect();
+  });
+});
+
+/* =========================================================
+   NUEVA SESION - UI
+   ========================================================= */
+const blockGrid = document.getElementById("blockGrid");
+const machinesContainer = document.getElementById("machinesContainer");
+const inputFecha = document.getElementById("inputFecha");
+
+// fecha por defecto: hoy
+(function initDate(){
+  const d = new Date();
+  const iso = d.toISOString().slice(0,10);
+  inputFecha.value = iso;
+})();
+
+function renderBlockGrid(){
+  blockGrid.innerHTML = "";
+  Object.keys(BLOCKS).forEach(blockName=>{
+    const chip = document.createElement("div");
+    chip.className = "block-chip" + (selectedBlocks.has(blockName) ? " selected" : "");
+    chip.textContent = blockName;
+    chip.addEventListener("click", ()=>{
+      if(selectedBlocks.has(blockName)) selectedBlocks.delete(blockName);
+      else selectedBlocks.add(blockName);
+      renderBlockGrid();
+      renderMachines();
+    });
+    blockGrid.appendChild(chip);
+  });
+}
+
+function weightOptionsHtml(machine){
+  if(machine.type === "L1"){
+    return L1_WEIGHTS.map(w=>`<option value="${w}">${w} kg</option>`).join("");
+  }
+  if(machine.type === "L2"){
+    return L2_WEIGHTS.map(w=>`<option value="${w}">${w} kg</option>`).join("");
+  }
+  if(machine.type === "fixed_lbs"){
+    if(!machine.table || machine.table.length === 0){
+      return `<option value="" disabled selected>Pesos aún no registrados</option>`;
+    }
+    return machine.table.map(o=>`<option value="${o.kg}">${o.kg} kg (${o.lbs} lbs)</option>`).join("");
+  }
+  if(machine.type === "fixed_kg"){
+    return machine.table.map(w=>`<option value="${w}">${w} kg</option>`).join("");
+  }
+  return "";
+}
+
+function renderMachines(){
+  machinesContainer.innerHTML = "";
+  if(selectedBlocks.size === 0) return;
+
+  // evitar duplicar la misma máquina física (ej. polea1) si aparece en 2 bloques seleccionados
+  const seen = new Set();
+
+  selectedBlocks.forEach(blockName=>{
+    const machines = BLOCKS[blockName];
+    if(!machines || machines.length === 0) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<h2>${blockName}</h2>`;
+
+    machines.forEach(m=>{
+      const uniqueKey = blockName + "::" + m.id;
+      if(seen.has(m.id) && blockName !== [...selectedBlocks][0]){
+        // ya se mostró esta máquina física en otro bloque seleccionado, se omite duplicado visual
+      }
+      seen.add(m.id);
+
+      const wrap = document.createElement("div");
+      wrap.className = "machine";
+      wrap.dataset.machineId = m.id;
+      wrap.dataset.machineName = m.name;
+      wrap.dataset.blockName = blockName;
+      wrap.dataset.machineType = m.type;
+
+      const tagLabel = m.type === "L1" ? "L1 · Mancuerna" :
+                        m.type === "L2" ? "L2 · Disco" :
+                        m.type === "fixed_lbs" ? "Peso fijo" :
+                        m.type === "fixed_kg" ? "Peso fijo" :
+                        m.type === "bodyweight" ? "Peso corporal" : "";
+
+      const accessoryHtml = m.accessories
+        ? `<select class="sel-accessory" style="grid-column: 1 / -1; margin-bottom:2px;">${m.accessories.map(a=>`<option value="${a}">${a}</option>`).join("")}</select>`
+        : "";
+
+      const fieldsHtml = m.type === "bodyweight"
+        ? `<input type="number" class="inp-reps-bw" placeholder="repeticiones" min="0" style="grid-column:1;">
+           <input type="number" class="inp-extra-kg" placeholder="+ peso kg (opc.)" min="0" style="grid-column:2;">`
+        : `<select class="sel-weight">${weightOptionsHtml(m)}</select>
+           <input type="number" class="inp-reps" placeholder="reps" min="0">`;
+
+      wrap.innerHTML = `
+        <div class="toggle-row">
+          <input type="checkbox" class="chk-used">
+          <span class="m-name">${m.name}</span>
+          <span class="m-tag" style="margin-left:auto">${tagLabel}</span>
+        </div>
+        <div class="m-fields" style="display:none;">
+          ${accessoryHtml}
+          ${fieldsHtml}
+        </div>
+        ${m.pending ? `<div class="pending-note">⏳ ${m.pending}</div>` : ""}
+      `;
+
+      const chk = wrap.querySelector(".chk-used");
+      const fields = wrap.querySelector(".m-fields");
+      chk.addEventListener("change", ()=>{
+        fields.style.display = chk.checked ? "grid" : "none";
+      });
+
+      card.appendChild(wrap);
+    });
+
+    if(machines.length === 0){
+      card.innerHTML += `<div class="empty">Bloque pendiente de completar.</div>`;
+    }
+
+    machinesContainer.appendChild(card);
+  });
+}
+
+document.getElementById("btnGuardar").addEventListener("click", ()=>{
+  const fecha = inputFecha.value;
+  if(!fecha){ alert("Selecciona una fecha."); return; }
+  if(selectedBlocks.size === 0){ alert("Selecciona al menos un bloque."); return; }
+
+  const entries = [];
+  const usedBlocksSet = new Set();
+  document.querySelectorAll(".machine").forEach(el=>{
+    const chk = el.querySelector(".chk-used");
+    if(chk && chk.checked){
+      const isBodyweight = el.dataset.machineType === "bodyweight";
+      let weight = null, reps = null;
+
+      if(isBodyweight){
+        const repsVal = el.querySelector(".inp-reps-bw").value;
+        if(!repsVal){ return; } // sin repeticiones, se omite
+        reps = parseInt(repsVal);
+        const extra = el.querySelector(".inp-extra-kg").value;
+        weight = extra ? parseFloat(extra) : 0;
+      } else {
+        weight = parseFloat(el.querySelector(".sel-weight").value);
+        if(isNaN(weight)){
+          return; // máquina con pesos aún no registrados, se omite
+        }
+        const repsVal = el.querySelector(".inp-reps").value;
+        reps = repsVal ? parseInt(repsVal) : null;
+      }
+
+      const accessorySel = el.querySelector(".sel-accessory");
+      const accessory = accessorySel ? accessorySel.value : null;
+
+      entries.push({
+        machineId: el.dataset.machineId,
+        machineName: el.dataset.machineName,
+        block: el.dataset.blockName,
+        weightKg: weight,
+        reps: (reps === null || reps === undefined || isNaN(reps)) ? null : reps,
+        metric: isBodyweight ? "reps" : "weight",
+        accessory: accessory
+      });
+      usedBlocksSet.add(el.dataset.blockName);
+    }
+  });
+
+  if(entries.length === 0){
+    alert("Marca al menos una máquina que hayas usado.");
+    return;
+  }
+
+  const session = {
+    id: Date.now().toString(),
+    date: fecha,
+    blocks: [...selectedBlocks],
+    entries
+  };
+  sessions.push(session);
+  saveSessions(sessions);
+
+  alert("Sesión guardada ✅");
+  selectedBlocks = new Set();
+  renderBlockGrid();
+  renderMachines();
+});
+
+renderBlockGrid();
+renderMachines();
+
+/* =========================================================
+   HISTORIAL
+   ========================================================= */
+function renderHistorial(){
+  const list = document.getElementById("historialList");
+  if(sessions.length === 0){
+    list.innerHTML = `<div class="empty">Aún no hay sesiones guardadas.</div>`;
+    return;
+  }
+  const sorted = [...sessions].sort((a,b)=> b.date.localeCompare(a.date));
+  list.innerHTML = "";
+  sorted.forEach(s=>{
+    const div = document.createElement("div");
+    div.className = "session-item";
+    const fechaFmt = formatFechaLarga(s.date);
+    div.innerHTML = `
+      <button class="del-btn" data-id="${s.id}">Eliminar</button>
+      <div class="s-date">${fechaFmt}</div>
+      <div class="s-blocks">${s.blocks.join(" · ")}</div>
+      ${s.entries.map(e=>`
+        <div class="s-line">
+          <span>${e.machineName}${e.accessory ? ` · ${e.accessory}` : ""}${e.metric === "reps" ? "" : (e.reps ? ` (${e.reps} reps)`:"")}</span>
+          <span>${e.metric === "reps" ? `${e.reps} reps${e.weightKg ? ` + ${e.weightKg}kg` : ""}` : `${e.weightKg} kg`}</span>
+        </div>
+      `).join("")}
+    `;
+    list.appendChild(div);
+  });
+
+  list.querySelectorAll(".del-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(confirm("¿Eliminar esta sesión?")){
+        sessions = sessions.filter(s=>s.id !== btn.dataset.id);
+        saveSessions(sessions);
+        renderHistorial();
+      }
+    });
+  });
+}
+
+function formatFechaLarga(iso){
+  const d = new Date(iso + "T00:00:00");
+  const dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  return `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/* =========================================================
+   PROGRESO
+   ========================================================= */
+function getAllMachinesFlat(){
+  const map = new Map();
+  Object.values(BLOCKS).forEach(list=>{
+    list.forEach(m=>{
+      if(!map.has(m.id)) map.set(m.id, m.name);
+    });
+  });
+  return map;
+}
+
+function renderProgresoSelect(){
+  const sel = document.getElementById("progresoMachineSelect");
+  const machinesMap = getAllMachinesFlat();
+
+  // solo listar máquinas que tienen al menos un registro
+  const usedIds = new Set();
+  sessions.forEach(s=>s.entries.forEach(e=>usedIds.add(e.machineId)));
+
+  sel.innerHTML = "";
+  if(usedIds.size === 0){
+    sel.innerHTML = `<option>Sin datos aún</option>`;
+    document.getElementById("chartWrap").innerHTML = `<div class="empty">Registra al menos una sesión para ver progreso.</div>`;
+    document.getElementById("progresoStats").innerHTML = "";
+    return;
+  }
+  [...usedIds].forEach(id=>{
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = machinesMap.get(id) || id;
+    sel.appendChild(opt);
+  });
+  sel.onchange = ()=> renderChart(sel.value);
+  renderChart(sel.value);
+}
+
+function renderChart(machineId){
+  const points = [];
+  let isReps = false;
+  sessions.forEach(s=>{
+    s.entries.forEach(e=>{
+      if(e.machineId === machineId){
+        if(e.metric === "reps"){
+          isReps = true;
+          points.push({date: s.date, weight: e.reps});
+        } else {
+          points.push({date: s.date, weight: e.weightKg});
+        }
+      }
+    });
+  });
+  points.sort((a,b)=> a.date.localeCompare(b.date));
+
+  const unitLabel = isReps ? "reps" : "kg";
+  const statsDiv = document.getElementById("progresoStats");
+  const chartWrap = document.getElementById("chartWrap");
+
+  if(points.length === 0){
+    chartWrap.innerHTML = `<div class="empty">Sin registros para esta máquina.</div>`;
+    statsDiv.innerHTML = "";
+    return;
+  }
+
+  const max = Math.max(...points.map(p=>p.weight));
+  const min = Math.min(...points.map(p=>p.weight));
+  const last = points[points.length-1].weight;
+  statsDiv.innerHTML = `
+    <div class="stat"><div class="n">${last}</div><div class="l">Último (${unitLabel})</div></div>
+    <div class="stat"><div class="n">${max}</div><div class="l">Máximo (${unitLabel})</div></div>
+    <div class="stat"><div class="n">${points.length}</div><div class="l">Registros</div></div>
+  `;
+
+  const w = Math.max(320, points.length * 60);
+  const h = 180;
+  const padL = 40, padR = 20, padT = 20, padB = 30;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+
+  const range = (max - min) || 1;
+  const xStep = points.length > 1 ? innerW / (points.length - 1) : 0;
+
+  const coords = points.map((p,i)=>{
+    const x = padL + (points.length > 1 ? i * xStep : innerW/2);
+    const y = padT + innerH - ((p.weight - min) / range) * innerH;
+    return {x, y, p};
+  });
+
+  const pathD = coords.map((c,i)=> (i===0?"M":"L") + c.x.toFixed(1) + "," + c.y.toFixed(1)).join(" ");
+
+  const circles = coords.map(c=>
+    `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="#f5a623" />`
+  ).join("");
+
+  const labels = coords.map(c=>{
+    const d = new Date(c.p.date + "T00:00:00");
+    const lbl = `${d.getDate()}/${d.getMonth()+1}`;
+    return `<text x="${c.x.toFixed(1)}" y="${h-8}" font-size="10" fill="#9b9489" text-anchor="middle">${lbl}</text>`;
+  }).join("");
+
+  const weightLabels = coords.map(c=>
+    `<text x="${c.x.toFixed(1)}" y="${(c.y-10).toFixed(1)}" font-size="10" fill="#f2ede4" text-anchor="middle">${c.p.weight}</text>`
+  ).join("");
+
+  chartWrap.innerHTML = `
+    <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+innerH}" stroke="#38342f" />
+      <line x1="${padL}" y1="${padT+innerH}" x2="${padL+innerW}" y2="${padT+innerH}" stroke="#38342f" />
+      <path d="${pathD}" fill="none" stroke="#f5a623" stroke-width="2.5" />
+      ${circles}
+      ${weightLabels}
+      ${labels}
+    </svg>
+  `;
+}
+</script>
+</body>
+</html>
