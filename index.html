@@ -515,6 +515,7 @@ BLOCKS["Espalda"] = [
    STORAGE
    ========================================================= */
 const STORAGE_KEY = "gym_sessions_2026";
+const DRAFT_KEY = "gym_draft_session";
 
 function loadSessions(){
   try{
@@ -571,6 +572,7 @@ function renderBlockGrid(){
       else selectedBlocks.add(blockName);
       renderBlockGrid();
       renderMachines();
+      collectDraft();
     });
     blockGrid.appendChild(chip);
   });
@@ -779,6 +781,7 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
   };
   sessions.push(session);
   saveSessions(sessions);
+  localStorage.removeItem(DRAFT_KEY);
 
   alert("Sesión guardada ✅");
   selectedBlocks = new Set();
@@ -786,8 +789,126 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
   renderMachines();
 });
 
+/* =========================================================
+   BORRADOR AUTOMÁTICO (evita perder la sesión a medio llenar
+   si Android recarga la pestaña al bloquear el celular)
+   ========================================================= */
+
+function collectDraft(){
+  const draft = {
+    date: inputFecha.value,
+    selectedBlocks: [...selectedBlocks],
+    machines: {}
+  };
+  document.querySelectorAll(".machine").forEach(el=>{
+    const key = el.dataset.blockName + "::" + el.dataset.machineId;
+    const chk = el.querySelector(".chk-used");
+    const entry = { checked: chk ? chk.checked : false };
+
+    if(el.dataset.machineType === "bodyweight"){
+      const repsBw = el.querySelector(".inp-reps-bw");
+      const extraKg = el.querySelector(".inp-extra-kg");
+      entry.repsBw = repsBw ? repsBw.value : "";
+      entry.extraKg = extraKg ? extraKg.value : "";
+    } else if(el.dataset.machineType === "L2"){
+      entry.discs = {};
+      el.querySelectorAll(".disc-count").forEach(inp=>{
+        entry.discs[inp.dataset.denom] = inp.value;
+      });
+      const rp = el.querySelector(".inp-reps");
+      entry.reps = rp ? rp.value : "";
+    } else {
+      const sw = el.querySelector(".sel-weight");
+      const rp = el.querySelector(".inp-reps");
+      if(sw) entry.weight = sw.value;
+      if(rp) entry.reps = rp.value;
+    }
+    const acc = el.querySelector(".sel-accessory");
+    if(acc) entry.accessory = acc.value;
+
+    draft.machines[key] = entry;
+  });
+  try{
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }catch(e){ /* ignora errores de storage */ }
+}
+
+function showDraftBanner(){
+  const main = document.querySelector("main");
+  const banner = document.createElement("div");
+  banner.style.cssText = "background:#dcf3e3;border:1px solid var(--amber);color:#14602f;padding:10px 14px;border-radius:10px;font-size:0.82rem;margin-bottom:14px;";
+  banner.textContent = "↩️ Se recuperó tu sesión sin guardar.";
+  main.insertBefore(banner, main.firstChild);
+  setTimeout(()=> banner.remove(), 4000);
+}
+
+function restoreDraftIfExists(){
+  let raw;
+  try{ raw = localStorage.getItem(DRAFT_KEY); }catch(e){ return; }
+  if(!raw) return;
+  let draft;
+  try{ draft = JSON.parse(raw); }catch(e){ return; }
+  if(!draft || !draft.machines) return;
+
+  if(draft.date) inputFecha.value = draft.date;
+  selectedBlocks = new Set(draft.selectedBlocks || []);
+  renderBlockGrid();
+  renderMachines();
+
+  document.querySelectorAll(".machine").forEach(el=>{
+    const key = el.dataset.blockName + "::" + el.dataset.machineId;
+    const entry = draft.machines[key];
+    if(!entry) return;
+
+    if(el.dataset.machineType === "bodyweight"){
+      const repsBw = el.querySelector(".inp-reps-bw");
+      const extraKg = el.querySelector(".inp-extra-kg");
+      if(repsBw && entry.repsBw) repsBw.value = entry.repsBw;
+      if(extraKg && entry.extraKg) extraKg.value = entry.extraKg;
+    } else if(el.dataset.machineType === "L2"){
+      if(entry.discs){
+        el.querySelectorAll(".disc-count").forEach(inp=>{
+          if(entry.discs[inp.dataset.denom] !== undefined) inp.value = entry.discs[inp.dataset.denom];
+        });
+        const totalSpan = el.querySelector(".disc-total-value");
+        if(totalSpan){
+          let total = 0;
+          el.querySelectorAll(".disc-count").forEach(inp=>{
+            total += parseFloat(inp.dataset.denom) * (parseInt(inp.value) || 0);
+          });
+          totalSpan.textContent = total;
+        }
+      }
+      const rp = el.querySelector(".inp-reps");
+      if(rp && entry.reps) rp.value = entry.reps;
+    } else {
+      const sw = el.querySelector(".sel-weight");
+      const rp = el.querySelector(".inp-reps");
+      if(sw && entry.weight !== undefined) sw.value = entry.weight;
+      if(rp && entry.reps) rp.value = entry.reps;
+    }
+    const acc = el.querySelector(".sel-accessory");
+    if(acc && entry.accessory !== undefined) acc.value = entry.accessory;
+
+    const chk = el.querySelector(".chk-used");
+    if(entry.checked && chk){
+      chk.checked = true;
+      chk.dispatchEvent(new Event("change"));
+    }
+  });
+
+  showDraftBanner();
+}
+
+// Guarda el borrador automáticamente ante cualquier cambio en la vista "Nueva sesión"
+const nuevaView = document.getElementById("view-nueva");
+nuevaView.addEventListener("input", collectDraft);
+nuevaView.addEventListener("change", collectDraft);
+
+
 renderBlockGrid();
 renderMachines();
+restoreDraftIfExists();
 
 /* =========================================================
    HISTORIAL
