@@ -6,16 +6,16 @@
 <title>Registro Gym</title>
 <style>
   :root{
-    --bg: #121110;
-    --bg-panel: #1c1a18;
-    --bg-panel-2: #242220;
-    --line: #38342f;
-    --amber: #f5a623;
-    --amber-dim: #7a5a1e;
-    --text: #f2ede4;
-    --text-dim: #9b9489;
+    --bg: #f4f7f4;
+    --bg-panel: #ffffff;
+    --bg-panel-2: #eef2ee;
+    --line: #d7ded7;
+    --amber: #1f9d55;
+    --amber-dim: #a9d9bb;
+    --text: #1b241d;
+    --text-dim: #6d786e;
     --danger: #d9534f;
-    --ok: #6fbf73;
+    --ok: #1f9d55;
     --radius: 14px;
     font-size: 16px;
   }
@@ -30,7 +30,7 @@
   }
   header.top{
     position:sticky; top:0; z-index:50;
-    background:linear-gradient(180deg, #17140f 0%, #17140fdd 90%, transparent);
+    background:linear-gradient(180deg, #f4f7f4 0%, #f4f7f4dd 90%, transparent);
     backdrop-filter: blur(6px);
     padding:18px 18px 10px;
     border-bottom:1px solid var(--line);
@@ -73,7 +73,7 @@
   nav.tabs button.active{
     background:var(--amber);
     border-color:var(--amber);
-    color:#181510;
+    color:#ffffff;
   }
   main{padding:16px;}
   .view{display:none;}
@@ -131,7 +131,7 @@
   }
   .block-chip.selected{
     border-color:var(--amber);
-    background:#2c2313;
+    background:#dcf3e3;
     color:var(--amber);
   }
 
@@ -161,6 +161,42 @@
     grid-template-columns:1fr 70px;
     gap:8px;
   }
+  .disc-calc{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px;
+  }
+  .disc-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:6px;
+  }
+  .disc-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+  }
+  .disc-item .disc-label{
+    font-size:0.68rem;
+    color:var(--text-dim);
+    font-weight:700;
+  }
+  .disc-item .disc-label::after{ content:"kg"; margin-left:2px; font-weight:400; }
+  input.disc-count{
+    width:100%;
+    text-align:center;
+    padding:6px 2px;
+    font-size:0.85rem;
+  }
+  .disc-total{
+    text-align:center;
+    margin-top:8px;
+    font-weight:700;
+    font-size:0.9rem;
+    color:var(--amber);
+  }
   .toggle-row{
     display:flex; align-items:center; gap:8px; margin-bottom:8px;
   }
@@ -169,7 +205,7 @@
   button.primary{
     width:100%;
     background:var(--amber);
-    color:#181510;
+    color:#ffffff;
     border:none;
     padding:14px;
     border-radius:12px;
@@ -323,7 +359,8 @@ function range(start, end, step){
 }
 
 const L1_WEIGHTS = range(10, 36, 2);      // mancuernas
-const L2_WEIGHTS = range(2.5, 40, 2.5);   // discos
+const L2_WEIGHTS = range(2.5, 40, 2.5);   // (ya no se usa para dropdown, se deja por compatibilidad)
+const DISC_DENOMINATIONS = [1.25, 2.5, 5, 10, 15, 20]; // denominaciones de discos disponibles
 
 // Tabla fija: máquinas de piernas con stack lbs/kg
 const STACK_PIERNAS = [
@@ -539,6 +576,22 @@ function renderBlockGrid(){
   });
 }
 
+function discCalculatorHtml(){
+  return `
+    <div class="disc-calc" style="grid-column: 1 / -1;">
+      <div class="disc-grid">
+        ${DISC_DENOMINATIONS.map(d=>`
+          <div class="disc-item">
+            <span class="disc-label">${d}</span>
+            <input type="number" class="disc-count" data-denom="${d}" min="0" value="0" inputmode="numeric">
+          </div>
+        `).join("")}
+      </div>
+      <div class="disc-total">Total: <span class="disc-total-value">0</span> kg</div>
+    </div>
+  `;
+}
+
 function weightOptionsHtml(machine){
   if(machine.type === "L1"){
     return L1_WEIGHTS.map(w=>`<option value="${w}">${w} kg</option>`).join("");
@@ -600,6 +653,9 @@ function renderMachines(){
       const fieldsHtml = m.type === "bodyweight"
         ? `<input type="number" class="inp-reps-bw" placeholder="repeticiones" min="0" style="grid-column:1;">
            <input type="number" class="inp-extra-kg" placeholder="+ peso kg (opc.)" min="0" style="grid-column:2;">`
+        : m.type === "L2"
+        ? `${discCalculatorHtml()}
+           <input type="number" class="inp-reps" placeholder="reps" min="0" style="grid-column: 1 / -1;">`
         : `<select class="sel-weight">${weightOptionsHtml(m)}</select>
            <input type="number" class="inp-reps" placeholder="reps" min="0">`;
 
@@ -621,6 +677,21 @@ function renderMachines(){
       chk.addEventListener("change", ()=>{
         fields.style.display = chk.checked ? "grid" : "none";
       });
+
+      if(m.type === "L2"){
+        const discInputs = wrap.querySelectorAll(".disc-count");
+        const totalSpan = wrap.querySelector(".disc-total-value");
+        const recalc = ()=>{
+          let total = 0;
+          discInputs.forEach(inp=>{
+            const denom = parseFloat(inp.dataset.denom);
+            const count = parseInt(inp.value) || 0;
+            total += denom * count;
+          });
+          totalSpan.textContent = total;
+        };
+        discInputs.forEach(inp=> inp.addEventListener("input", recalc));
+      }
 
       card.appendChild(wrap);
     });
@@ -644,7 +715,8 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
     const chk = el.querySelector(".chk-used");
     if(chk && chk.checked){
       const isBodyweight = el.dataset.machineType === "bodyweight";
-      let weight = null, reps = null;
+      const isDiscCalc = el.dataset.machineType === "L2";
+      let weight = null, reps = null, discBreakdown = null;
 
       if(isBodyweight){
         const repsVal = el.querySelector(".inp-reps-bw").value;
@@ -652,6 +724,22 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
         reps = parseInt(repsVal);
         const extra = el.querySelector(".inp-extra-kg").value;
         weight = extra ? parseFloat(extra) : 0;
+      } else if(isDiscCalc){
+        const discInputs = el.querySelectorAll(".disc-count");
+        let total = 0;
+        const parts = [];
+        discInputs.forEach(inp=>{
+          const denom = parseFloat(inp.dataset.denom);
+          const count = parseInt(inp.value) || 0;
+          if(count > 0){
+            total += denom * count;
+            parts.push(`${count}x${denom}kg`);
+          }
+        });
+        weight = total;
+        discBreakdown = parts.length ? parts.join(" + ") : null;
+        const repsVal = el.querySelector(".inp-reps").value;
+        reps = repsVal ? parseInt(repsVal) : null;
       } else {
         weight = parseFloat(el.querySelector(".sel-weight").value);
         if(isNaN(weight)){
@@ -671,7 +759,8 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
         weightKg: weight,
         reps: (reps === null || reps === undefined || isNaN(reps)) ? null : reps,
         metric: isBodyweight ? "reps" : "weight",
-        accessory: accessory
+        accessory: accessory,
+        discBreakdown: discBreakdown
       });
       usedBlocksSet.add(el.dataset.blockName);
     }
@@ -724,6 +813,7 @@ function renderHistorial(){
           <span>${e.machineName}${e.accessory ? ` · ${e.accessory}` : ""}${e.metric === "reps" ? "" : (e.reps ? ` (${e.reps} reps)`:"")}</span>
           <span>${e.metric === "reps" ? `${e.reps} reps${e.weightKg ? ` + ${e.weightKg}kg` : ""}` : `${e.weightKg} kg`}</span>
         </div>
+        ${e.discBreakdown ? `<div style="font-size:0.7rem;color:var(--text-dim);margin:-4px 0 6px;">${e.discBreakdown}</div>` : ""}
       `).join("")}
     `;
     list.appendChild(div);
@@ -839,24 +929,24 @@ function renderChart(machineId){
   const pathD = coords.map((c,i)=> (i===0?"M":"L") + c.x.toFixed(1) + "," + c.y.toFixed(1)).join(" ");
 
   const circles = coords.map(c=>
-    `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="#f5a623" />`
+    `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="#1f9d55" />`
   ).join("");
 
   const labels = coords.map(c=>{
     const d = new Date(c.p.date + "T00:00:00");
     const lbl = `${d.getDate()}/${d.getMonth()+1}`;
-    return `<text x="${c.x.toFixed(1)}" y="${h-8}" font-size="10" fill="#9b9489" text-anchor="middle">${lbl}</text>`;
+    return `<text x="${c.x.toFixed(1)}" y="${h-8}" font-size="10" fill="#6d786e" text-anchor="middle">${lbl}</text>`;
   }).join("");
 
   const weightLabels = coords.map(c=>
-    `<text x="${c.x.toFixed(1)}" y="${(c.y-10).toFixed(1)}" font-size="10" fill="#f2ede4" text-anchor="middle">${c.p.weight}</text>`
+    `<text x="${c.x.toFixed(1)}" y="${(c.y-10).toFixed(1)}" font-size="10" fill="#1b241d" text-anchor="middle">${c.p.weight}</text>`
   ).join("");
 
   chartWrap.innerHTML = `
     <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+innerH}" stroke="#38342f" />
-      <line x1="${padL}" y1="${padT+innerH}" x2="${padL+innerW}" y2="${padT+innerH}" stroke="#38342f" />
-      <path d="${pathD}" fill="none" stroke="#f5a623" stroke-width="2.5" />
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+innerH}" stroke="#d7ded7" />
+      <line x1="${padL}" y1="${padT+innerH}" x2="${padL+innerW}" y2="${padT+innerH}" stroke="#d7ded7" />
+      <path d="${pathD}" fill="none" stroke="#1f9d55" stroke-width="2.5" />
       ${circles}
       ${weightLabels}
       ${labels}
