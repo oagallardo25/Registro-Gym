@@ -197,6 +197,44 @@
     font-size:0.9rem;
     color:var(--amber);
   }
+  .instances-container{
+    grid-column: 1 / -1;
+  }
+  .instance-row{
+    border:1px dashed var(--line);
+    border-radius:10px;
+    padding:8px;
+    margin-bottom:8px;
+    background:var(--bg);
+  }
+  .instance-row .sel-accessory{
+    margin-bottom:6px;
+  }
+  .instance-row .instance-fields{
+    display:grid;
+    grid-template-columns:1fr 70px;
+    gap:8px;
+  }
+  .btn-remove-instance{
+    width:100%;
+    background:transparent;
+    border:none;
+    color:var(--danger);
+    font-size:0.7rem;
+    margin-top:6px;
+    padding:2px;
+  }
+  .btn-add-instance{
+    grid-column: 1 / -1;
+    width:100%;
+    background:transparent;
+    border:1px dashed var(--amber);
+    color:var(--amber);
+    padding:8px;
+    border-radius:10px;
+    font-size:0.8rem;
+    font-weight:700;
+  }
   .toggle-row{
     display:flex; align-items:center; gap:8px; margin-bottom:8px;
   }
@@ -417,6 +455,15 @@ const STACK_ABDOMINAL = [
 // Triceps Press (Matrix) - stack propio
 // Biceps Curl (Matrix) - stack propio
 // Lat Pulldown Convergente (Matrix) - stack propio
+// Jalón en Polea Alta (Matrix) - stack propio
+const STACK_JALON_POLEA_ALTA = [
+  {lbs:25, kg:11},{lbs:40, kg:18},{lbs:55, kg:25},{lbs:70, kg:32},
+  {lbs:85, kg:39},{lbs:100, kg:45},{lbs:115, kg:52},{lbs:130, kg:59},
+  {lbs:145, kg:66},{lbs:160, kg:73},{lbs:175, kg:79},{lbs:190, kg:86},
+  {lbs:205, kg:93},{lbs:220, kg:100},{lbs:235, kg:107},{lbs:250, kg:113},
+  {lbs:265, kg:120},{lbs:280, kg:127},{lbs:295, kg:134}
+];
+
 const STACK_LAT_PULLDOWN = [
   {lbs:20, kg:9},{lbs:30, kg:14},{lbs:40, kg:18},{lbs:50, kg:23},
   {lbs:60, kg:27},{lbs:70, kg:32},{lbs:80, kg:36},{lbs:90, kg:41},
@@ -453,6 +500,8 @@ const BLOCKS = {
     mkMachine("pecho_plano_banco", "Plano con banco", "L1"),
     mkMachine("pecho_plano_barra", "Plano con barra", "L2"),
     mkMachine("pecho_inclinado_barra", "Inclinado con barra", "L2"),
+    mkMachine("aperturas_pec_deck", "Aperturas (Pec Deck)", "fixed_lbs", {table: STACK_JALON_POLEA_ALTA}),
+    mkMachine("pecho_press_iso_lateral", "Press Pecho (Máquina Iso-lateral)", "L2"),
     mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
     mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
   ],
@@ -473,6 +522,7 @@ const BLOCKS = {
   ],
   "Hombros": [
     mkMachine("hombros_press_militar", "Press Militar", "L2"),
+    mkMachine("aperturas_pec_deck", "Aperturas (Pec Deck)", "fixed_lbs", {table: STACK_JALON_POLEA_ALTA}),
     mkMachine("hombros_mancuernas_libres", "Ejercicio con mancuernas libres", "L1"),
     mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
     mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
@@ -506,6 +556,7 @@ BLOCKS["Abdomen"] = [
 // Espalda: bloque pendiente, ya incluye barra plana/zigzag + agarre prono
 BLOCKS["Espalda"] = [
   mkMachine("espalda_lat_pulldown", "Lat Pulldown Convergente", "fixed_lbs", {table: STACK_LAT_PULLDOWN}),
+  mkMachine("espalda_jalon_polea_alta", "Jalón en Polea Alta", "fixed_lbs", {table: STACK_JALON_POLEA_ALTA, accessories: POLEA_ACCESORIOS}),
   mkMachine("dominadas_prono", "Dominadas agarre prono", "bodyweight"),
   mkMachine("barra_plana", "Barra plana", "fixed_kg", {table: BARRA_KG}),
   mkMachine("barra_zigzag", "Barra zigzag", "fixed_kg", {table: BARRA_KG}),
@@ -578,6 +629,20 @@ function renderBlockGrid(){
   });
 }
 
+function instanceRowHtml(m, idx){
+  const removeBtn = idx > 0 ? `<button type="button" class="btn-remove-instance">✕ Quitar este registro</button>` : "";
+  return `
+    <div class="instance-row" data-idx="${idx}">
+      <select class="sel-accessory">${m.accessories.map(a=>`<option value="${a}">${a}</option>`).join("")}</select>
+      <div class="instance-fields">
+        <select class="sel-weight">${weightOptionsHtml(m)}</select>
+        <input type="number" class="inp-reps" placeholder="reps" min="0">
+      </div>
+      ${removeBtn}
+    </div>
+  `;
+}
+
 function discCalculatorHtml(){
   return `
     <div class="disc-calc" style="grid-column: 1 / -1;">
@@ -648,18 +713,22 @@ function renderMachines(){
                         m.type === "fixed_kg" ? "Peso fijo" :
                         m.type === "bodyweight" ? "Peso corporal" : "";
 
-      const accessoryHtml = m.accessories
-        ? `<select class="sel-accessory" style="grid-column: 1 / -1; margin-bottom:2px;">${m.accessories.map(a=>`<option value="${a}">${a}</option>`).join("")}</select>`
-        : "";
-
-      const fieldsHtml = m.type === "bodyweight"
-        ? `<input type="number" class="inp-reps-bw" placeholder="repeticiones" min="0" style="grid-column:1;">
-           <input type="number" class="inp-extra-kg" placeholder="+ peso kg (opc.)" min="0" style="grid-column:2;">`
-        : m.type === "L2"
-        ? `${discCalculatorHtml()}
-           <input type="number" class="inp-reps" placeholder="reps" min="0" style="grid-column: 1 / -1;">`
-        : `<select class="sel-weight">${weightOptionsHtml(m)}</select>
+      let fieldsBlockHtml;
+      if(m.accessories){
+        fieldsBlockHtml = `
+          <div class="instances-container">${instanceRowHtml(m, 0)}</div>
+          <button type="button" class="btn-add-instance">+ Registrar con otro accesorio</button>
+        `;
+      } else if(m.type === "bodyweight"){
+        fieldsBlockHtml = `<input type="number" class="inp-reps-bw" placeholder="repeticiones" min="0" style="grid-column:1;">
+           <input type="number" class="inp-extra-kg" placeholder="+ peso kg (opc.)" min="0" style="grid-column:2;">`;
+      } else if(m.type === "L2"){
+        fieldsBlockHtml = `${discCalculatorHtml()}
+           <input type="number" class="inp-reps" placeholder="reps" min="0" style="grid-column: 1 / -1;">`;
+      } else {
+        fieldsBlockHtml = `<select class="sel-weight">${weightOptionsHtml(m)}</select>
            <input type="number" class="inp-reps" placeholder="reps" min="0">`;
+      }
 
       wrap.innerHTML = `
         <div class="toggle-row">
@@ -668,8 +737,7 @@ function renderMachines(){
           <span class="m-tag" style="margin-left:auto">${tagLabel}</span>
         </div>
         <div class="m-fields" style="display:none;">
-          ${accessoryHtml}
-          ${fieldsHtml}
+          ${fieldsBlockHtml}
         </div>
         ${m.pending ? `<div class="pending-note">⏳ ${m.pending}</div>` : ""}
       `;
@@ -695,6 +763,22 @@ function renderMachines(){
         discInputs.forEach(inp=> inp.addEventListener("input", recalc));
       }
 
+      if(m.accessories){
+        const container = wrap.querySelector(".instances-container");
+        const addBtn = wrap.querySelector(".btn-add-instance");
+        addBtn.addEventListener("click", ()=>{
+          const idx = container.querySelectorAll(".instance-row").length;
+          const div = document.createElement("div");
+          div.innerHTML = instanceRowHtml(m, idx).trim();
+          const newRow = div.firstElementChild;
+          container.appendChild(newRow);
+          const removeBtn = newRow.querySelector(".btn-remove-instance");
+          if(removeBtn){
+            removeBtn.addEventListener("click", ()=> newRow.remove());
+          }
+        });
+      }
+
       card.appendChild(wrap);
     });
 
@@ -716,6 +800,30 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
   document.querySelectorAll(".machine").forEach(el=>{
     const chk = el.querySelector(".chk-used");
     if(chk && chk.checked){
+
+      if(el.querySelector(".instances-container")){
+        // Máquina con accesorios: puede tener varias instancias (ej. Polea con soga, luego con barra)
+        el.querySelectorAll(".instance-row").forEach(row=>{
+          const weight = parseFloat(row.querySelector(".sel-weight").value);
+          if(isNaN(weight)){ return; } // pesos aún no registrados, se omite
+          const repsVal = row.querySelector(".inp-reps").value;
+          const reps = repsVal ? parseInt(repsVal) : null;
+          const accessory = row.querySelector(".sel-accessory").value;
+          entries.push({
+            machineId: el.dataset.machineId,
+            machineName: el.dataset.machineName,
+            block: el.dataset.blockName,
+            weightKg: weight,
+            reps: reps,
+            metric: "weight",
+            accessory: accessory,
+            discBreakdown: null
+          });
+        });
+        usedBlocksSet.add(el.dataset.blockName);
+        return;
+      }
+
       const isBodyweight = el.dataset.machineType === "bodyweight";
       const isDiscCalc = el.dataset.machineType === "L2";
       let weight = null, reps = null, discBreakdown = null;
@@ -751,9 +859,6 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
         reps = repsVal ? parseInt(repsVal) : null;
       }
 
-      const accessorySel = el.querySelector(".sel-accessory");
-      const accessory = accessorySel ? accessorySel.value : null;
-
       entries.push({
         machineId: el.dataset.machineId,
         machineName: el.dataset.machineName,
@@ -761,7 +866,7 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
         weightKg: weight,
         reps: (reps === null || reps === undefined || isNaN(reps)) ? null : reps,
         metric: isBodyweight ? "reps" : "weight",
-        accessory: accessory,
+        accessory: null,
         discBreakdown: discBreakdown
       });
       usedBlocksSet.add(el.dataset.blockName);
@@ -805,7 +910,16 @@ function collectDraft(){
     const chk = el.querySelector(".chk-used");
     const entry = { checked: chk ? chk.checked : false };
 
-    if(el.dataset.machineType === "bodyweight"){
+    if(el.querySelector(".instances-container")){
+      entry.instances = [];
+      el.querySelectorAll(".instance-row").forEach(row=>{
+        entry.instances.push({
+          accessory: row.querySelector(".sel-accessory").value,
+          weight: row.querySelector(".sel-weight").value,
+          reps: row.querySelector(".inp-reps").value
+        });
+      });
+    } else if(el.dataset.machineType === "bodyweight"){
       const repsBw = el.querySelector(".inp-reps-bw");
       const extraKg = el.querySelector(".inp-extra-kg");
       entry.repsBw = repsBw ? repsBw.value : "";
@@ -824,7 +938,7 @@ function collectDraft(){
       if(rp) entry.reps = rp.value;
     }
     const acc = el.querySelector(".sel-accessory");
-    if(acc) entry.accessory = acc.value;
+    if(acc && !el.querySelector(".instances-container")) entry.accessory = acc.value;
 
     draft.machines[key] = entry;
   });
@@ -860,7 +974,28 @@ function restoreDraftIfExists(){
     const entry = draft.machines[key];
     if(!entry) return;
 
-    if(el.dataset.machineType === "bodyweight"){
+    if(entry.instances){
+      const container = el.querySelector(".instances-container");
+      if(container){
+        // asegurar que existan tantas filas como instancias guardadas
+        while(container.querySelectorAll(".instance-row").length < entry.instances.length){
+          const addBtn = el.querySelector(".btn-add-instance");
+          if(addBtn) addBtn.click();
+          else break;
+        }
+        const rows = container.querySelectorAll(".instance-row");
+        entry.instances.forEach((inst, i)=>{
+          const row = rows[i];
+          if(!row) return;
+          const accSel = row.querySelector(".sel-accessory");
+          const wSel = row.querySelector(".sel-weight");
+          const rInp = row.querySelector(".inp-reps");
+          if(accSel && inst.accessory !== undefined) accSel.value = inst.accessory;
+          if(wSel && inst.weight !== undefined) wSel.value = inst.weight;
+          if(rInp && inst.reps) rInp.value = inst.reps;
+        });
+      }
+    } else if(el.dataset.machineType === "bodyweight"){
       const repsBw = el.querySelector(".inp-reps-bw");
       const extraKg = el.querySelector(".inp-extra-kg");
       if(repsBw && entry.repsBw) repsBw.value = entry.repsBw;
