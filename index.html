@@ -364,6 +364,17 @@
   <!-- ===== HISTORIAL ===== -->
   <section id="view-historial" class="view">
     <div class="card">
+      <h2>☁️ Respaldo en Google Drive</h2>
+      <span class="row-label">Link de tu Apps Script</span>
+      <input type="url" id="inputBackupUrl" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:8px;">
+      <button class="secondary" id="btnSaveBackupUrl">Guardar link</button>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+        <button class="secondary" id="btnSyncNow">Sincronizar ahora</button>
+        <button class="secondary" id="btnRestoreCloud">Restaurar desde Drive</button>
+      </div>
+      <div id="cloudStatus" style="font-size:0.75rem; color:var(--text-dim); margin-top:8px; text-align:center;"></div>
+    </div>
+    <div class="card">
       <h2>Sesiones registradas</h2>
       <div id="historialList"><div class="empty">Aún no hay sesiones guardadas.</div></div>
     </div>
@@ -567,6 +578,65 @@ BLOCKS["Espalda"] = [
    ========================================================= */
 const STORAGE_KEY = "gym_sessions_2026";
 const DRAFT_KEY = "gym_draft_session";
+const BACKUP_URL_KEY = "gym_backup_url";
+const DEFAULT_BACKUP_URL = "https://script.google.com/macros/s/AKfycbxrYM7Nh70-l_Kj1nwVvW9T3__N4MabQSpZ2Db5bh5L0vxbYVEkPKCwUK2Nxm-h-ftT/exec";
+
+function getBackupUrl(){
+  return localStorage.getItem(BACKUP_URL_KEY) || DEFAULT_BACKUP_URL;
+}
+
+async function syncSessionToCloud(session){
+  const url = getBackupUrl();
+  if(!url) return;
+  try{
+    await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify(session)
+    });
+  }catch(e){
+    console.warn("No se pudo respaldar la sesión en la nube:", e);
+  }
+}
+
+async function syncAllSessionsToCloud(){
+  const statusEl = document.getElementById("cloudStatus");
+  if(statusEl) statusEl.textContent = "Sincronizando...";
+  let ok = 0, fail = 0;
+  for(const s of sessions){
+    try{
+      await syncSessionToCloud(s);
+      ok++;
+    }catch(e){ fail++; }
+  }
+  if(statusEl) statusEl.textContent = `✅ ${ok} sesiones sincronizadas${fail ? `, ${fail} fallaron` : ""}.`;
+}
+
+async function restoreFromCloud(){
+  const url = getBackupUrl();
+  const statusEl = document.getElementById("cloudStatus");
+  if(!url){ if(statusEl) statusEl.textContent = "Configura primero el link de respaldo."; return; }
+  if(statusEl) statusEl.textContent = "Restaurando desde Drive...";
+  try{
+    const res = await fetch(url);
+    const remoteSessions = await res.json();
+    const localIds = new Set(sessions.map(s=>s.id));
+    let added = 0;
+    remoteSessions.forEach(rs=>{
+      if(!localIds.has(rs.id)){
+        sessions.push(rs);
+        added++;
+      }
+    });
+    saveSessions(sessions);
+    renderHistorial();
+    if(statusEl) statusEl.textContent = `✅ Se restauraron ${added} sesiones nuevas desde Drive.`;
+  }catch(e){
+    console.warn(e);
+    if(statusEl) statusEl.textContent = "⚠️ No se pudo conectar con Drive. Revisa el link.";
+  }
+}
+
 
 function loadSessions(){
   try{
@@ -887,6 +957,7 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
   sessions.push(session);
   saveSessions(sessions);
   localStorage.removeItem(DRAFT_KEY);
+  syncSessionToCloud(session); // respaldo en segundo plano, no bloquea
 
   alert("Sesión guardada ✅");
   selectedBlocks = new Set();
@@ -1048,6 +1119,22 @@ restoreDraftIfExists();
 /* =========================================================
    HISTORIAL
    ========================================================= */
+/* =========================================================
+   BACKUP EN GOOGLE DRIVE
+   ========================================================= */
+const inputBackupUrl = document.getElementById("inputBackupUrl");
+inputBackupUrl.value = getBackupUrl();
+
+document.getElementById("btnSaveBackupUrl").addEventListener("click", ()=>{
+  const val = inputBackupUrl.value.trim();
+  if(!val){ alert("Pega el link de tu Apps Script."); return; }
+  localStorage.setItem(BACKUP_URL_KEY, val);
+  document.getElementById("cloudStatus").textContent = "✅ Link guardado.";
+});
+
+document.getElementById("btnSyncNow").addEventListener("click", syncAllSessionsToCloud);
+document.getElementById("btnRestoreCloud").addEventListener("click", restoreFromCloud);
+
 function renderHistorial(){
   const list = document.getElementById("historialList");
   if(sessions.length === 0){
