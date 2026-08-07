@@ -235,6 +235,46 @@
     font-size:0.8rem;
     font-weight:700;
   }
+  .manual-section{
+    margin-top:10px;
+    padding-top:12px;
+    border-top:1px dashed var(--line);
+  }
+  .manual-title{
+    font-size:0.75rem;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin-bottom:8px;
+  }
+  .manual-row{
+    border:1px dashed var(--line);
+    border-radius:10px;
+    padding:8px;
+    margin-bottom:8px;
+    background:var(--bg);
+  }
+  .manual-row .manual-name{
+    width:100%;
+    margin-bottom:6px;
+  }
+  .manual-fields{
+    display:grid;
+    grid-template-columns:1fr 70px;
+    gap:8px;
+  }
+  .btn-remove-manual{
+    width:100%;
+    background:transparent;
+    border:none;
+    color:var(--danger);
+    font-size:0.7rem;
+    margin-top:6px;
+    padding:2px;
+  }
+  .btn-add-manual{
+    width:100%;
+  }
   .toggle-row{
     display:flex; align-items:center; gap:8px; margin-bottom:8px;
   }
@@ -530,6 +570,8 @@ const BLOCKS = {
     mkMachine("piernas_femoral_sentado", "Femoral Sentado", "fixed_lbs", {table: STACK_PIERNAS}),
     mkMachine("piernas_femoral_acostado", "Femoral Acostado", "fixed_lbs", {table: STACK_PIERNAS}),
     mkMachine("piernas_leg_press", "Leg Press", "fixed_lbs", {table: STACK_LEG_PRESS}),
+    mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
+    mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
   ],
   "Hombros": [
     mkMachine("hombros_press_militar", "Press Militar", "L2"),
@@ -568,9 +610,12 @@ BLOCKS["Abdomen"] = [
 BLOCKS["Espalda"] = [
   mkMachine("espalda_lat_pulldown", "Lat Pulldown Convergente", "fixed_lbs", {table: STACK_LAT_PULLDOWN}),
   mkMachine("espalda_jalon_polea_alta", "Jalón en Polea Alta", "fixed_lbs", {table: STACK_JALON_POLEA_ALTA, accessories: POLEA_ACCESORIOS}),
+  mkMachine("espalda_row", "Row (Remo en máquina)", "fixed_lbs", {table: STACK_JALON_POLEA_ALTA}),
   mkMachine("dominadas_prono", "Dominadas agarre prono", "bodyweight"),
   mkMachine("barra_plana", "Barra plana", "fixed_kg", {table: BARRA_KG}),
   mkMachine("barra_zigzag", "Barra zigzag", "fixed_kg", {table: BARRA_KG}),
+  mkMachine("polea1", "Polea 1", "fixed_lbs", {table: POLEA_1, accessories: POLEA_ACCESORIOS}),
+  mkMachine("polea2", "Polea 2", "fixed_lbs", {table: POLEA_2, accessories: POLEA_ACCESORIOS}),
 ];
 
 /* =========================================================
@@ -697,6 +742,19 @@ function renderBlockGrid(){
     });
     blockGrid.appendChild(chip);
   });
+}
+
+function manualRowHtml(){
+  return `
+    <div class="manual-row">
+      <input type="text" class="manual-name" placeholder="Nombre del ejercicio">
+      <div class="manual-fields">
+        <input type="number" class="manual-weight" placeholder="peso kg" min="0" step="0.5">
+        <input type="number" class="manual-reps" placeholder="reps" min="0">
+      </div>
+      <button type="button" class="btn-remove-manual">✕ Quitar</button>
+    </div>
+  `;
 }
 
 function instanceRowHtml(m, idx){
@@ -856,6 +914,26 @@ function renderMachines(){
       card.innerHTML += `<div class="empty">Bloque pendiente de completar.</div>`;
     }
 
+    // Sección de ejercicio manual (para lo que no está en la lista)
+    const manualSection = document.createElement("div");
+    manualSection.className = "manual-section";
+    manualSection.dataset.blockName = blockName;
+    manualSection.innerHTML = `
+      <div class="manual-title">✏️ Otro ejercicio (no está en la lista)</div>
+      <div class="manual-entries-container"></div>
+      <button type="button" class="secondary btn-add-manual">+ Agregar ejercicio manual</button>
+    `;
+    const manualContainer = manualSection.querySelector(".manual-entries-container");
+    const addManualBtn = manualSection.querySelector(".btn-add-manual");
+    addManualBtn.addEventListener("click", ()=>{
+      const div = document.createElement("div");
+      div.innerHTML = manualRowHtml().trim();
+      const row = div.firstElementChild;
+      manualContainer.appendChild(row);
+      row.querySelector(".btn-remove-manual").addEventListener("click", ()=> row.remove());
+    });
+    card.appendChild(manualSection);
+
     machinesContainer.appendChild(card);
   });
 }
@@ -941,6 +1019,30 @@ document.getElementById("btnGuardar").addEventListener("click", ()=>{
       });
       usedBlocksSet.add(el.dataset.blockName);
     }
+  });
+
+  // Ejercicios manuales (no están en la lista de máquinas)
+  document.querySelectorAll(".manual-section").forEach(section=>{
+    const blockName = section.dataset.blockName;
+    section.querySelectorAll(".manual-row").forEach(row=>{
+      const name = row.querySelector(".manual-name").value.trim();
+      const weightVal = row.querySelector(".manual-weight").value;
+      if(!name || weightVal === ""){ return; } // requiere nombre y peso
+      const weight = parseFloat(weightVal);
+      if(isNaN(weight)){ return; }
+      const repsVal = row.querySelector(".manual-reps").value;
+      entries.push({
+        machineId: "manual_" + name.toLowerCase().replace(/[^a-z0-9]+/g, "_") ,
+        machineName: name + " (manual)",
+        block: blockName,
+        weightKg: weight,
+        reps: repsVal ? parseInt(repsVal) : null,
+        metric: "weight",
+        accessory: null,
+        discBreakdown: null
+      });
+      usedBlocksSet.add(blockName);
+    });
   });
 
   if(entries.length === 0){
